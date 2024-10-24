@@ -1,1 +1,2 @@
-# statbyte-posterdown-2024
+# Using posterdown for Reproducible Posters in R
+
