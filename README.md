@@ -9,5 +9,5 @@ This workshop presumes some prior experience with R, R Studio, and R Markdown. F
 <ul>
 <li> Click on the green Code button toward the top of this GitHub page
 <li> Choose Download ZIP
-<li> Unzip the downloaded zip file and save all the files in a single folder on your computer somewhere you can find it 
+<li> Unzip the downloaded zip file and save the contents on your computer somewhere you can find it 
 </ul>
