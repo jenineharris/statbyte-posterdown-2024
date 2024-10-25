@@ -1,0 +1,364 @@
+---
+main_topsize: 0.2 #percent coverage of the poster
+main_bottomsize: 0.1
+#ESSENTIALS
+title: '**Motivations and Barriers to Vaccination during Covid-19**'
+author:
+  - name: '**Megan Richard**'
+    affil: 1
+    main: true
+    orcid: '0000-0000-0000-0000'
+    twitter: twitterhandle 
+    email: name@domain.whatever
+  - name: Another G. Contributor
+    affil: 2
+    main: true
+    email: 'ag.con@posterdown.net'
+  - name: Person Three
+    affil: 3
+  - name: Person Four
+    affil: 2
+  - name: Person Five
+    affil: 3
+  - name: Person Six
+    affil: 3
+  - name: A. Seventh Author
+    affil: 2
+affiliation:
+  - num: 1
+    address: Brown School, Washington University in St. Louis
+  - num: 2
+    address: Department of Graphics and Layouts, University of Posters; Canada
+  - num: 3
+    address: Another Institute of a place where work gets done, Earth, Milky Way
+main_findings:
+  - "People who had a recent flu vaccination, more liberal political beliefs, and who were younger were more likely to intend to get the COVID-19 vaccine."
+logoleft_name: avatar-2alphas.png
+logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+logocenter_name: https&#58;//brownschool.washu.edu/wp-content/themes/brownschool/assets/images/WashU_Brown_School_1_Line_RGB.svg
+output: 
+  posterdown::posterdown_betterport:
+    self_contained: false
+    pandoc_args: --mathjax
+    number_sections: false
+link-citations: true
+poster_height: "48in"
+poster_width: "36in"
+body_textsize: "32px"
+sectitle_textsize: "44px"
+primary_colour: "#007D8A"
+bibliography: packages.bib
+knit: pagedown::chrome_print
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      tidy = FALSE,
+                      message = FALSE,
+                      fig.align = 'center',
+                      out.width = "100%")
+options(knitr.table.format = "html") 
+```
+
+```{css, echo=FALSE}
+table.Rtable1 {
+    font-family: "Times New Roman", serif;
+    border-collapse: collapse;
+    font-size: 28pt;
+    margin-left: auto;
+    margin-right: auto
+}
+```
+
+# Research Purpose
+
+-   This research seeks to answer the following question: Are age, political beliefs, and prior flu shot associated with the intention to get the COVID-19 vaccine for adults in the United States?
+
+# Data Description
+
+-   Data were collected in October 2020 through a Google Survey disseminated on social media
+
+-   Survey questions were chosen by evaluating existing literature [@rasul2023; @ruiz2021; @albrecht2022]
+
+-   After removing observations missing data on the 4 relevant variables, 4 variables and 511 observations will be examined for this project
+
+-   The codebook can be downloaded from [this link](https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/codebook.md)
+
+```{r include=FALSE , warning=FALSE, message=FALSE}
+
+#Open Tidyverse 
+library(package = "tidyverse") 
+library(forcats)
+
+# Import the data 
+covid <- read.csv(file = "COVID-19 Vaccine Survey Responses.csv")
+
+#take out international - does not align with research question
+covid.dirty <- covid %>% 
+  select( Once.it.is.available..do.you.intend.to.get.the.vaccine.for.COVID.19.,
+          Have.you.received.a.flu.shot.in.the.past.12.months., 
+          What.is.the.highest.degree.or.level.of.school.you.have.completed., 
+          Which.most.closely.aligns.with.your.political.beliefs.,
+          I.am.at.risk.for.contracting.COVID.19.,
+          COVID.19.can.be.a.serious.disease.,
+          The.COVID.19.vaccine.will.prevent.me.from.contracting.COVID.19., 
+          There.are.many.risks.associated.with.getting.the.COVID.19.vaccine.,
+          State.of.Residence,
+          What.is.your.age.in.years.) %>% 
+  mutate(State.of.Residence = recode_factor(.x = State.of.Residence,
+                                        `International` = NA_character_)) %>% 
+  filter(!is.na(State.of.Residence))
+
+#Recode and label variables, ensure missing values are properly coded
+covid.small <- covid.dirty %>% 
+  select( Once.it.is.available..do.you.intend.to.get.the.vaccine.for.COVID.19.,
+          Have.you.received.a.flu.shot.in.the.past.12.months., 
+          Which.most.closely.aligns.with.your.political.beliefs.,
+          What.is.your.age.in.years.) %>% 
+  #mutate_all(as.factor) %>% 
+  rename(vaccine.intention = Once.it.is.available..do.you.intend.to.get.the.vaccine.for.COVID.19.) %>% 
+  rename(flu.shot.history = Have.you.received.a.flu.shot.in.the.past.12.months.) %>%
+  mutate(flu.shot.history = recode_factor(.x = flu.shot.history,
+                                          `Don't know/Not sure` = NA_character_)) %>% 
+  rename(political.beliefs = Which.most.closely.aligns.with.your.political.beliefs.) %>% 
+  mutate(political.beliefs = recode_factor(.x = political.beliefs,
+                                         '.' = "Prefer not to answer")) %>% 
+  rename(age.years = What.is.your.age.in.years.) %>% 
+  mutate(age.years = as.numeric(as.character(age.years))) %>% 
+  drop_na()
+
+
+#summarize the cleaned data 
+summary(covid.small)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+#Creating levels for each variable so they are ordered in logical sense on graphs below
+covid.small$flu.shot.history <- factor(covid.small$flu.shot.history,
+                                       levels = c("Yes", "No"))
+covid.small$vaccine.intention <- factor(covid.small$vaccine.intention,
+                                        levels = c("Yes", "No", "Don't Know/Not sure"))
+covid.small$political.beliefs <- factor(covid.small$political.beliefs, 
+                                        levels = c("Very Conservative", "Somewhat Conservative", "Mixed", "Somewhat Liberal", "Very Liberal", "Prefer not to answer"))
+
+```
+
+```{r include = FALSE}
+# check age distribution
+hist(covid.small$age.years)
+```
+
+# Participant Characteristics
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+#Open TableOne package 
+library(package = "table1")
+library(package = "tableone")
+
+#Creating table to show descriptive statistics in percents 
+#add labels to the table
+labelled::var_label(x = covid.small) <- c("Intends to get the vaccine for COVID-19",
+                                          "Flu shot in the past 12 months",
+                                          "Political beliefs",
+                                          "Age in years (median, IQR)")
+
+# use print to show table with labels and percent
+table1(~ vaccine.intention + flu.shot.history +
+         political.beliefs + age.years,
+       data = covid.small,
+       render.continuous = "Median, IQR",
+       caption = "Characteristics of 511 Participants in a Covid-19 Vaccination Survey, 2022.")
+
+
+```
+
+```{r include = FALSE}
+# hide this but use info for bullet points below
+table1(~ flu.shot.history + 
+         political.beliefs + age.years | vaccine.intention,
+       data = covid.small,
+       render.continuous = "Median, (Q1, Q3)")
+```
+
+# Vaccine Intention and Flu Shot History
+
+-   Figure 1 shows a higher percentage of people who intend to get the COVID-19 vaccine have had the flu shot and the opposite is true for those not intending to get the COVID-19 vaccine
+
+    -   Of those who intend to get the COVID-19 vaccine, 79.3% of them had a flu shot in the last year and 20.7% did not have a flu shot
+
+    -   Of those who do not intend to get the COVID-19 vaccine, only 37.5% of them had a recent flu shot and 62.5% did not have a flu shot
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+covid.small <- covid.small %>% 
+  mutate(vaccine.intention = recode_factor(vaccine.intention,
+    "Don't Know/Not sure" = "Unsure Intent to get Covid Vaccine",
+    "No" = "No Intent to get Covid Vaccine (No)",
+    "Yes" = "Intent to get Covid Vaccine (Yes)",
+  ))
+
+#Figure 1 - Flu Shot History Graphed with Percent in Intention to get COVID-19 Vaccine
+figure1 <- covid.small %>% 
+  drop_na(vaccine.intention, flu.shot.history) %>% 
+  group_by(vaccine.intention, flu.shot.history) %>% 
+  count() %>% 
+  group_by(vaccine.intention) %>% 
+  mutate(percent = 100*(n/sum(n))) %>% 
+  ggplot(aes(x = flu.shot.history, fill = vaccine.intention,
+             y = percent)) +
+  geom_col(position = "dodge") +
+  theme_bw(base_size = 18, base_family = 'serif') + 
+  theme(strip.background = element_rect(fill = "#eff3ff")) +
+  labs(x = "Have you received a flu shot\nin the past 12 months?", 
+       y = "Percent in vaccine intention group",
+       title = "Figure 1: Vaccine Intention & Flu Shot History\n(2022; n = 511)") +
+  scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3"), 
+                    guide = "none") +
+  facet_wrap(facets = 'vaccine.intention', nrow = 3) +
+  coord_flip()
+figure1
+```
+
+```{r include = FALSE}
+descr::CrossTable(x = covid.small$flu.shot.history,
+                  y = covid.small$vaccine.intention,
+                  sresid = TRUE,
+                  expected = TRUE,
+                  prop.r = FALSE,
+                  prop.c = FALSE,
+                  prop.t = FALSE,
+                  chisq = TRUE)
+# assumptions met, expected values are large in all cells
+```
+
+-   Flu shot history and vaccine intention are both categorical so I used chi-squared to determine whether they were statistically significantly associated
+
+    -   All chi-squared assumptions were met including independent observations, both variables were nominal or ordinal, and more than 80% of expected values were greater than 5
+
+-   There is a statistically significant association between vaccine intention and flu shot history ($\chi^2$ = 56.35; p \< .05)
+
+-   Standardized residuals showed which groups were driving the statistically significant result
+
+    -   Significantly **fewer than expected** people who had a flu shot did not intend to take the COVID-19 vaccine (std res = -3.30) and **more than expected** who had a flu shot intended to take the vaccine (std res = 2.87)
+
+    -   Significantly **more than expected** people with no flu shot did not intend to take the COVID-19 vaccine (std res = 4.44) and **fewer than expected** with no flu shot intended to take the vaccine (std res = -3.87)
+
+# Vaccine Intention and Political Beliefs
+
+-   Figure 2 suggests that political beliefs may be associated with intention to get the COVID-19 vaccine
+
+    -   Of those who intend to get the COVID-19 vaccine, 50% were very liberal and 24.8% were somewhat liberal
+
+    -   Of those who do not intend to get the COVID-19 vaccine, 32.3% were politically mixed and 21.9% were somewhat conservative
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.height=7}
+#Figure 3 - Political Beliefs Graphed with Percent in Intention to get COVID-19 Vaccine
+figure3 <- covid.small %>% 
+  drop_na(vaccine.intention, political.beliefs) %>% 
+  group_by(vaccine.intention, political.beliefs) %>% 
+  count() %>% 
+  group_by(vaccine.intention) %>% 
+  mutate(percent = 100*(n/sum(n))) %>%
+  ggplot(aes(x = political.beliefs, fill = vaccine.intention,
+             y = percent)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  theme_bw(base_size = 18, base_family = 'serif') + 
+  theme(strip.background = element_rect(fill = "#eff3ff")) + 
+  labs(x = "Political beliefs", 
+       y = "Percent in vaccine intention group",
+       title = "Figure 2: Vaccine Intention &\nPolitical Beliefs (2022; n = 511)") +
+  scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
+                    guide = "none") +
+  facet_wrap(facets = 'vaccine.intention', nrow = 3)
+figure3
+```
+
+```{r include = FALSE}
+descr::CrossTable(x = covid.small$political.beliefs,
+                  y = covid.small$vaccine.intention,
+                  sresid = TRUE,
+                  expected = TRUE,
+                  prop.r = FALSE,
+                  prop.c = FALSE,
+                  prop.t = FALSE,
+                  chisq = TRUE)
+# assumptions are met, expected values are large in all cells
+```
+
+-   Political beliefs and vaccine intention are both categorical so I used chi-squared to determine whether they were statistically significantly associated
+
+    -   All chi-squared assumptions were met including independent observations, both variables were nominal or ordinal, and more than 80% of expected values are greater than 5
+
+-   I found a statistically significant association between vaccine intention and political beliefs ($\chi^2$ = 142.55; p \< .05).
+
+-   Standardized residuals showed which groups were driving the statistically significant result
+
+    -   Significantly **more very liberal people than expected were intending to take the COVID-19 vaccine** (std res = 4.83) while **significantly fewer than expected** who preferred not to answer, were politically mixed, or were somewhat conservative were intending to take the vaccine (std res \< -2)
+
+    -   Significantly **more than expected** people who preferred not to answer, were politically mixed, or were very conservative were not intending to take the COVID-19 vaccine (std res \> 2) while **significantly fewer than expected** who were very liberal or somewhat liberal were intending to not take the vaccine (std res \< -2)
+
+# Vaccine Intention and Age
+
+-   The median age is highest in the "No" vaccine intention group (median = 39.5, IQR = 23.8--50.0) and lowest in the "Yes" vaccine intention group (median = 24.0, IQR = 22.0--41.8)
+
+-   The large difference suggests that age is likely associated with vaccine intention and that there are more older participants who do not intend to get the COVID-19 vaccine
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(gghalves)
+figure4 <- covid.small %>% 
+  ggplot(aes(fill = fct_rev(vaccine.intention),
+             y = age.years,
+             x = vaccine.intention)) +
+  geom_half_violin(aes(fill = fct_rev(vaccine.intention)), alpha = .4, side = "r") +
+  geom_half_point(aes(color = fct_rev(vaccine.intention)), alpha = .8, side = "l") +
+  theme_bw(base_size = 18, base_family = 'serif') + 
+  labs(y = "Age in Years", 
+       x = "Intent to Get Covid Vaccine",
+       title = "Figure 3: Vaccine Intention & Age in Years\n(2022; n = 511)") +
+  scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
+                    guide = "none") +
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
+                    guide = "none") +
+  scale_x_discrete(
+    labels = function(x) str_wrap(x, width = 15),
+    drop = FALSE
+  ) +
+  coord_flip()
+  
+figure4
+```
+
+```{r include = FALSE}
+# fails the assumption of normal distribution within groups, the Yes group is very right skewed
+# the don't know group is somewhat right skewed
+# Kruskal-Wallis test
+kruskal.test(formula = age.years ~ vaccine.intention,
+             data = covid.small)
+# stat sig so do follow-up test
+dunn.test::dunn.test(x = covid.small$age.years,
+                     g = covid.small$vaccine.intention,
+                     method = "bonferroni")
+
+```
+
+-   The ANOVA assumption of normal distribution within groups was not met with the distribution of age being very right skewed in the group who intended to get the COVID-19 vaccine
+
+-   Age is continuous and vaccine intention is categorical with 3 categories so I used the Kruskal-Wallis test to test whether the distribution of ranked age was the same across vaccine intention groups
+
+-   There was a statistically significant difference in age distribution across the vaccine intention groups (KW $\chi^2$ = 11.63; p = .003)
+
+-   A post-hoc Dunn's test can determine which groups are statistically significantly different from each other
+
+    -   The mean age of the group with no intention to vaccinate for COVID-19 was statistically significantly higher (diff = 3.35 years) compared to the group that intended to vaccinate for COVID-19 (p = .001)
+
+# Summary and Recommendations
+
+Consistent with prior studies, I found that people who had a flu vaccination in the last year, had more liberal political beliefs, and were younger were more likely to intend to get the COVID-19 vaccine [@rasul2023; @ruiz2021; @albrecht2022]. Increasing the uptake of flu vaccination and developing health communication campaigns that reach older and more conservative audiences could both increase the uptake of COVID-19 vaccination.
+
+# References
+
+::: {#refs}
+:::
